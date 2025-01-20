@@ -18,7 +18,10 @@ body {
 }
 
 .container {
-    flex: 1;
+    max-width: 1400px !important;
+    width: 95% !important;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
 .navbar {
@@ -42,6 +45,8 @@ body {
     background-color: var(--darker-bg) !important;
     border-radius: 1rem;
     overflow: hidden;
+    max-width: 1600px;
+    margin: 0 auto;
 }
 
 .card-body {
@@ -54,6 +59,8 @@ body {
     padding: 2rem;
     margin-bottom: 2rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 1600px;
+    margin: 0 auto;
 }
 
 .form-label {
@@ -128,6 +135,7 @@ body {
     align-items: center;
     margin: 20px auto;
     width: 100%;
+    max-width: 1600px;
     overflow-x: auto;
     padding: 0 20px;
 }
@@ -969,4 +977,11 @@ body {
 
 .vinyl-album:hover .album-info {
     transform: rotate(0deg);
+}
+
+/* Ensure responsive behavior */
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1600px !important;
+    }
 } 

@@ -236,6 +236,8 @@ function downloadCollage() {
     const wrapper = document.getElementById('collageWrapper');
     if (!wrapper) return;
 
+    const showText = document.getElementById('showText').checked;
+    
     showAlert('Generating high-quality image, please wait...', 'info');
 
     const templateStyle = document.getElementById('templateStyle').value;
@@ -298,11 +300,47 @@ function downloadCollage() {
                     // Apply template-specific styling
                     switch(templateStyle) {
                         case 'polaroid':
-                            // Draw white polaroid frame
+                            // Draw white polaroid frame with more space for text
                             ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(x - scale*10, y - scale*10, 
-                                       imgSize + scale*20, imgSize + scale*50);
+                            const frameTop = scale * 10;
+                            const frameBottom = scale * 60; // Increased bottom padding for text
+                            const frameSides = scale * 10;
+                            
+                            ctx.fillRect(
+                                x - frameSides, 
+                                y - frameTop, 
+                                imgSize + (frameSides * 2), 
+                                imgSize + frameTop + frameBottom
+                            );
+                            
+                            // Draw the image
                             ctx.drawImage(item.image, x, y, imgSize, imgSize);
+                            
+                            if (showText) {
+                                // Add text below the image
+                                ctx.fillStyle = '#000000';
+                                ctx.textAlign = 'center';
+                                ctx.shadowColor = 'rgba(0, 0, 0, 0)';
+                                ctx.shadowBlur = 0;
+                                
+                                const textStartY = y + imgSize + scale * 10; // Start text closer to image
+                                
+                                // Album name (larger and bolder)
+                                ctx.font = `bold ${scale * 7}px Helvetica`;
+                                const albumText = truncateText(item.info.album, ctx, imgSize - scale * 15);
+                                ctx.fillText(albumText, x + imgSize/2, textStartY);
+                                
+                                // Artist name (medium size)
+                                ctx.font = `${scale * 6}px Helvetica`;
+                                ctx.fillStyle = '#444444';
+                                const artistText = truncateText(item.info.artist, ctx, imgSize - scale * 15);
+                                ctx.fillText(artistText, x + imgSize/2, textStartY + scale * 10);
+                                
+                                // Play count (smaller)
+                                ctx.font = `${scale * 5}px Helvetica`;
+                                ctx.fillStyle = '#666666';
+                                ctx.fillText(item.info.plays, x + imgSize/2, textStartY + scale * 20);
+                            }
                             break;
                             
                         case 'vinyl':
@@ -313,78 +351,115 @@ function downloadCollage() {
                             ctx.clip();
                             ctx.drawImage(item.image, x, y, imgSize, imgSize);
                             ctx.restore();
+                            
+                            if (showText) {
+                                // Add text
+                                ctx.textAlign = 'center';
+                                ctx.fillStyle = '#ffffff';
+                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                                ctx.shadowBlur = scale*2;
+                                
+                                // Album name
+                                ctx.font = `bold ${scale*7}px Helvetica`;
+                                const vinylAlbumText = truncateText(item.info.album, ctx, imgSize*0.7);
+                                ctx.fillText(vinylAlbumText, x + imgSize/2, y + imgSize/2);
+                                
+                                // Artist name
+                                ctx.font = `${scale*5}px Helvetica`;
+                                const vinylArtistText = truncateText(item.info.artist, ctx, imgSize*0.7);
+                                ctx.fillText(vinylArtistText, x + imgSize/2, y + imgSize/2 + scale*8);
+                            }
                             break;
                             
                         case 'minimal':
-                            // Draw with minimal styling
                             ctx.drawImage(item.image, x, y, imgSize, imgSize);
+                            
+                            if (showText) {
+                                // Add minimal overlay
+                                const minimalGradient = ctx.createLinearGradient(x, y + imgSize - scale*60, x, y + imgSize);
+                                minimalGradient.addColorStop(0, 'rgba(0,0,0,0)');
+                                minimalGradient.addColorStop(1, 'rgba(0,0,0,0.9)');
+                                ctx.fillStyle = minimalGradient;
+                                ctx.fillRect(x, y + imgSize - scale*60, imgSize, scale*60);
+                                
+                                // Add text
+                                ctx.textAlign = 'center';
+                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                                ctx.shadowBlur = scale*2;
+                                
+                                // Album name
+                                ctx.font = `bold ${scale*6}px Helvetica`;
+                                ctx.fillStyle = '#ffffff';
+                                const minimalAlbumText = truncateText(item.info.album, ctx, imgSize - scale*10);
+                                ctx.fillText(minimalAlbumText, x + imgSize/2, y + imgSize - scale*25);
+                                
+                                // Artist name
+                                ctx.font = `${scale*5}px Helvetica`;
+                                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                                const minimalArtistText = truncateText(item.info.artist, ctx, imgSize - scale*10);
+                                ctx.fillText(minimalArtistText, x + imgSize/2, y + imgSize - scale*12);
+                            }
                             break;
                             
                         case 'mosaic':
-                            // Draw with gradient overlay
                             ctx.drawImage(item.image, x, y, imgSize, imgSize);
-                            const gradient = ctx.createLinearGradient(x, y, x + imgSize, y + imgSize);
-                            gradient.addColorStop(0, 'rgba(0,0,0,0.2)');
-                            gradient.addColorStop(1, 'transparent');
-                            ctx.fillStyle = gradient;
-                            ctx.fillRect(x, y, imgSize, imgSize);
+                            
+                            if (showText) {
+                                // Add mosaic overlay
+                                const mosaicGradient = ctx.createLinearGradient(x, y + imgSize - scale*80, x, y + imgSize);
+                                mosaicGradient.addColorStop(0, 'rgba(0,0,0,0)');
+                                mosaicGradient.addColorStop(1, 'rgba(0,0,0,0.95)');
+                                ctx.fillStyle = mosaicGradient;
+                                ctx.fillRect(x, y + imgSize - scale*80, imgSize, scale*80);
+                                
+                                // Add text
+                                ctx.textAlign = 'center';
+                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                                ctx.shadowBlur = scale*2;
+                                
+                                // Album name
+                                ctx.font = `bold ${scale*7}px Helvetica`;
+                                ctx.fillStyle = '#ffffff';
+                                const mosaicAlbumText = truncateText(item.info.album, ctx, imgSize - scale*15);
+                                ctx.fillText(mosaicAlbumText, x + imgSize/2, y + imgSize - scale*30);
+                                
+                                // Artist name
+                                ctx.font = `${scale*5}px Helvetica`;
+                                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                                const mosaicArtistText = truncateText(item.info.artist, ctx, imgSize - scale*15);
+                                ctx.fillText(mosaicArtistText, x + imgSize/2, y + imgSize - scale*15);
+                            }
                             break;
                             
                         default: // classic
                             ctx.drawImage(item.image, x, y, imgSize, imgSize);
+                            
+                            if (showText) {
+                                // Add classic overlay
+                                const classicGradient = ctx.createLinearGradient(x, y + imgSize - scale*70, x, y + imgSize);
+                                classicGradient.addColorStop(0, 'rgba(0,0,0,0)');
+                                classicGradient.addColorStop(1, 'rgba(0,0,0,0.95)');
+                                ctx.fillStyle = classicGradient;
+                                ctx.fillRect(x, y + imgSize - scale*70, imgSize, scale*70);
+                                
+                                // Add text
+                                ctx.textAlign = 'center';
+                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                                ctx.shadowBlur = scale*2;
+                                
+                                // Album name
+                                ctx.font = `bold ${scale*7}px Helvetica`;
+                                ctx.fillStyle = '#ffffff';
+                                const classicAlbumText = truncateText(item.info.album, ctx, imgSize - scale*15);
+                                ctx.fillText(classicAlbumText, x + imgSize/2, y + imgSize - scale*30);
+                                
+                                // Artist name
+                                ctx.font = `${scale*5}px Helvetica`;
+                                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                                const classicArtistText = truncateText(item.info.artist, ctx, imgSize - scale*15);
+                                ctx.fillText(classicArtistText, x + imgSize/2, y + imgSize - scale*15);
+                            }
                             break;
-                    }
-
-                    // Add text based on template
-                    if (templateStyle === 'polaroid') {
-                        // Polaroid style text
-                        ctx.fillStyle = '#000000';
-                        ctx.textAlign = 'center';
-                        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-                        ctx.shadowBlur = scale * 2;
-                        ctx.shadowOffsetY = scale;
-                        
-                        const textY = y + imgSize + scale*25;
-                        // Album name
-                        ctx.font = `bold ${scale*10}px Helvetica`;
-                        const albumText = truncateText(item.info.album, ctx, imgSize - scale*20);
-                        ctx.fillText(albumText, x + imgSize/2, textY);
-                        
-                        // Artist name
-                        ctx.font = `${scale*8}px Helvetica`;
-                        const artistText = truncateText(item.info.artist, ctx, imgSize - scale*20);
-                        ctx.fillText(artistText, x + imgSize/2, textY + scale*15);
-                    } else {
-                        // Default overlay text for other templates
-                        const textGradient = ctx.createLinearGradient(x, y + imgSize - scale*80, x, y + imgSize);
-                        textGradient.addColorStop(0, 'rgba(0,0,0,0)');
-                        textGradient.addColorStop(1, 'rgba(0,0,0,0.9)');
-                        ctx.fillStyle = textGradient;
-                        ctx.fillRect(x, y + imgSize - scale*80, imgSize, scale*80);
-                        
-                        // Add text shadow for better readability
-                        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-                        ctx.shadowBlur = scale * 3;
-                        ctx.shadowOffsetX = scale;
-                        ctx.shadowOffsetY = scale;
-                        
-                        ctx.fillStyle = '#ffffff';
-                        ctx.textAlign = 'center';
-                        
-                        // Album name
-                        ctx.font = `bold ${scale*12}px Helvetica`;
-                        const albumText = truncateText(item.info.album, ctx, imgSize - scale*20);
-                        ctx.fillText(albumText, x + imgSize/2, y + imgSize - scale*45);
-                        
-                        // Artist name
-                        ctx.font = `${scale*9}px Helvetica`;
-                        const artistText = truncateText(item.info.artist, ctx, imgSize - scale*20);
-                        ctx.fillText(artistText, x + imgSize/2, y + imgSize - scale*25);
-                        
-                        // Play count
-                        ctx.font = `${scale*7}px Helvetica`;
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                        ctx.fillText(item.info.plays, x + imgSize/2, y + imgSize - scale*10);
                     }
 
                     // Reset shadow effect after drawing text

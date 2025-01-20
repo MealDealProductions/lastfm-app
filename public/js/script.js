@@ -41,29 +41,33 @@ async function generateCollage() {
         return;
     }
 
+    // Get grid size from single input
+    const gridSize = parseInt(document.getElementById('gridSize').value) || 3;
+    if (gridSize < 2 || gridSize > 8) {
+        showAlert('Grid size must be between 2 and 8', 'danger');
+        return;
+    }
+
     // Show loading overlay
     document.getElementById('loadingOverlay').classList.remove('d-none');
     
     try {
         // Load all tabs data
-        updateProfile(username);
-        updateTopCharts(username);
-        updateRecentTracks(username);
+        await updateProfile(username);
+        await updateTopCharts(username);
+        await updateRecentTracks(username);
         
-        // Generate collage (existing code)
         const timeRange = document.getElementById('timeRange').value;
-        const gridWidth = parseInt(document.getElementById('gridWidth').value) || 3;
-        const gridHeight = parseInt(document.getElementById('gridHeight').value) || 3;
-        const limit = gridWidth * gridHeight;
+        const limit = gridSize * gridSize; // Square grid
 
         const albums = await fetchTopAlbums(username, timeRange, limit);
-        createCollage(albums, gridWidth, gridHeight);
-        
+        await createCollage(albums, gridSize, gridSize);
         showAlert('Data loaded successfully!', 'success');
     } catch (error) {
         console.error('Error:', error);
         showAlert('Error loading data. Please check the username and try again.', 'danger');
     } finally {
+        // Hide loading overlay
         document.getElementById('loadingOverlay').classList.add('d-none');
     }
 }
@@ -237,6 +241,7 @@ function downloadCollage() {
     if (!wrapper) return;
 
     const showText = document.getElementById('showText').checked;
+    const gridSize = parseInt(document.getElementById('gridSize').value);
     
     showAlert('Generating high-quality image, please wait...', 'info');
 
@@ -245,11 +250,39 @@ function downloadCollage() {
 
     const tempCanvas = document.createElement('canvas');
     const ctx = tempCanvas.getContext('2d');
-    const scale = 8;
     
-    tempCanvas.width = wrapper.offsetWidth * scale;
-    tempCanvas.height = wrapper.offsetHeight * scale;
+    // Adjust scale based on grid size to prevent canvas size limits
+    let scale;
+    if (gridSize <= 5) {
+        scale = 8;
+    } else if (gridSize <= 7) {
+        scale = 6;
+    } else if (gridSize <= 8) {
+        scale = 4;
+    } else {
+        scale = 3;
+    }
     
+    // Calculate dimensions with a maximum size limit
+    const maxDimension = 12000; // Reduced maximum size
+    let canvasWidth = wrapper.offsetWidth * scale;
+    let canvasHeight = wrapper.offsetHeight * scale;
+    
+    // Scale down if dimensions are too large
+    if (canvasWidth > maxDimension || canvasHeight > maxDimension) {
+        const ratio = maxDimension / Math.max(canvasWidth, canvasHeight);
+        canvasWidth *= ratio;
+        canvasHeight *= ratio;
+        scale *= ratio;
+    }
+    
+    tempCanvas.width = canvasWidth;
+    tempCanvas.height = canvasHeight;
+    
+    // Enable image smoothing for better quality
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     // Apply template background
     if (template.background.includes('gradient')) {
         const gradient = ctx.createLinearGradient(0, 0, tempCanvas.width, tempCanvas.height);
@@ -855,7 +888,7 @@ async function compareUsers() {
     }
 }
 
-// Add sharing functions
+// Update the sharing functions
 function shareToTwitter() {
     const username = document.getElementById('username').value;
     if (!username) {
@@ -863,7 +896,7 @@ function shareToTwitter() {
         return;
     }
     
-    const text = `Check out my Last.fm music collage! ${window.location.origin}?user=${username}`;
+    const text = `Check out my music collage at https://mdpmusic.uk?user=${username}`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
 }
@@ -875,8 +908,8 @@ function shareToFacebook() {
         return;
     }
     
-    // Create a proper sharing URL with all necessary parameters
-    const shareUrl = `${window.location.origin}?user=${username}`;
+    // Create sharing URL with mdpmusic.uk domain
+    const shareUrl = `https://mdpmusic.uk?user=${username}`;
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&display=popup`;
     
     // Open Facebook share dialog in a popup window
@@ -899,7 +932,7 @@ function copyLink() {
         return;
     }
     
-    const url = `${window.location.origin}?user=${username}`;
+    const url = `https://mdpmusic.uk?user=${username}`;
     navigator.clipboard.writeText(url).then(() => {
         showAlert('Link copied to clipboard!', 'success');
     }).catch(() => {
@@ -925,4 +958,20 @@ function truncateText(text, ctx, maxWidth) {
         truncated = truncated.slice(0, -4) + '...';
     }
     return truncated;
-} 
+}
+
+// Add event listener to keep inputs in sync
+document.addEventListener('DOMContentLoaded', function() {
+    const gridSizeInput = document.getElementById('gridSize');
+    
+    gridSizeInput.addEventListener('input', function() {
+        let value = parseInt(this.value) || 3;
+        // Enforce min/max limits
+        value = Math.max(2, Math.min(8, value));
+        this.value = value;
+        
+        // Update the disabled mirror input
+        const mirrorInput = this.nextElementSibling.nextElementSibling;
+        mirrorInput.value = value;
+    });
+}); 

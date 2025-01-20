@@ -1,0 +1,972 @@
+:root {
+    --primary-color: #b90000;
+    --primary-hover: #d40000;
+    --dark-bg: #121212;
+    --darker-bg: #000000;
+    --card-bg: #181818;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--dark-bg) !important;
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+.navbar {
+    padding: 1rem 0;
+    background-color: var(--darker-bg) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-brand i {
+    font-size: 1.5rem;
+}
+
+.card {
+    background-color: var(--darker-bg) !important;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.form-container {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-text {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    opacity: 0.7;
+}
+
+.form-control, .form-select {
+    font-size: 1rem;
+    height: auto;
+    padding: 0.75rem 1rem;
+    background-color: var(--darker-bg) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--dark-bg) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(185, 0, 0, 0.25);
+}
+
+.input-group-text {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--darker-bg) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+}
+
+.generate-btn {
+    margin-top: 0.5rem;
+    height: 3.5rem;
+    font-size: 1.1rem;
+    background-color: var(--primary-color) !important;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.generate-btn:hover {
+    background-color: var(--primary-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(185, 0, 0, 0.3);
+}
+
+.generate-btn:active {
+    transform: translateY(0);
+}
+
+#collageContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px auto;
+    width: 100%;
+    overflow-x: auto;
+    padding: 0 20px;
+}
+
+#collageWrapper {
+    min-width: min-content;
+    width: auto;
+    max-width: none;
+}
+
+.album-item {
+    position: relative;
+    overflow: hidden;
+    min-width: 250px;
+}
+
+/* Base size (3x3 grid) */
+.album-item {
+    font-size: calc(10px + 0.4vw);
+}
+
+/* Medium size (4x4 to 6x6 grid) */
+.album-item.small {
+    font-size: calc(8px + 0.3vw);
+}
+
+/* Large size (7x7 to 10x10 grid) */
+.album-item.very-small {
+    font-size: calc(6px + 0.2vw);
+}
+
+.image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1/1;
+}
+
+.album-cover {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.album-info-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: white;
+    padding: 0.8rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.small .album-info-overlay {
+    padding: calc(0.4rem + 0.2vw);
+}
+
+.very-small .album-info-overlay {
+    padding: calc(0.3rem + 0.1vw);
+}
+
+.album-item:hover .album-info-overlay {
+    opacity: 1;
+}
+
+.image-container:hover .album-cover {
+    transform: scale(1.05);
+}
+
+.album-info {
+    width: 100%;
+    text-align: center;
+}
+
+.album-name {
+    font-size: 1em;
+    font-weight: 600;
+    margin-bottom: 0.2em;
+    line-height: 1.2;
+}
+
+.artist-name {
+    font-size: 0.85em;
+    opacity: 0.9;
+    margin-bottom: 0.2em;
+    line-height: 1.1;
+}
+
+.play-count {
+    font-size: 0.75em;
+    opacity: 0.7;
+}
+
+.download-btn {
+    margin-top: 2rem;
+    background-color: #198754 !important;
+    border: none;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.download-btn:hover {
+    background-color: #146c43 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+}
+
+.alert {
+    background-color: var(--darker-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.alert-success {
+    border-left: 4px solid #198754;
+    color: #98ffa2 !important;
+}
+
+.alert-danger {
+    border-left: 4px solid #dc3545;
+    color: #ff8d8d !important;
+}
+
+.alert-info {
+    border-left: 4px solid #0dcaf0;
+    color: #98e3ff !important;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(5px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+}
+
+.loading-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: white;
+    margin-top: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#searchHistory {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background-color: var(--darker-bg);
+    border-radius: 0.5rem;
+}
+
+#searchHistory .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+#searchHistory .btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Responsive container */
+@media (max-width: 1200px) {
+    #collageContainer > div {
+        width: 100% !important;
+        max-width: calc(100vw - 40px);
+    }
+}
+
+/* Card body padding adjustment */
+.card-body {
+    padding: 1rem;
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1.5rem;
+    }
+    .album-info {
+        font-size: 0.8rem;
+    }
+    .play-count {
+        font-size: 0.7rem;
+    }
+    #collageContainer {
+        padding: 0 10px;
+    }
+    .form-container {
+        padding: 1.5rem;
+    }
+    .form-control, .form-select {
+        font-size: 0.9rem;
+    }
+    .generate-btn {
+        height: 3.2rem;
+        font-size: 1rem;
+    }
+    .form-label {
+        font-size: 0.8rem;
+    }
+    .album-info-overlay {
+        padding: 0.8rem;
+    }
+    .album-name {
+        font-size: 0.8rem;
+    }
+    .artist-name {
+        font-size: 0.75rem;
+    }
+    .play-count {
+        font-size: 0.7rem;
+    }
+    .album-item,
+    .album-item.small,
+    .album-item.very-small {
+        font-size: 1rem;
+    }
+}
+
+.footer {
+    margin-top: auto !important;
+    background-color: var(--darker-bg) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem 0;
+}
+
+.footer .text-muted a:hover {
+    color: var(--primary-color) !important;
+    text-decoration: none;
+}
+
+.footer .fa-heart {
+    animation: heartbeat 1.5s ease infinite;
+}
+
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-container {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Tab Styling */
+.nav-tabs {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-tabs .nav-link {
+    color: var(--text-secondary);
+    border: none;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--text-primary);
+    border: none;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    background-color: transparent;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Profile Styling */
+.profile-container {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 2rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.user-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-stats .stat-card {
+    background-color: var(--darker-bg);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Top Charts Styling */
+.top-section {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.top-list .list-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    color: var(--text-primary);
+}
+
+.top-list .list-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.top-list .list-item .name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.top-list .list-item .plays,
+.top-list .list-item .artist {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Recent Tracks Styling */
+.recent-tracks .track-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.track-item .name {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.track-item .artist,
+.track-item .timestamp {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Compare Styling */
+.compare-container {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 2rem;
+}
+
+.compare-results {
+    margin-top: 2rem;
+}
+
+/* Loading Animation */
+.skeleton-loading {
+    height: 100px;
+    background: linear-gradient(
+        90deg,
+        var(--card-bg) 25%,
+        var(--darker-bg) 50%,
+        var(--card-bg) 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 0.5rem;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Update text colors for better contrast */
+.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.list-item {
+    color: var(--text-primary);
+}
+
+.list-item .name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.list-item .plays,
+.list-item .artist {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.track-item {
+    color: var(--text-primary);
+}
+
+.track-item .name {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.track-item .artist,
+.track-item .timestamp {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.user-details h2 {
+    color: var(--text-primary);
+}
+
+.user-details p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.comparison-result h3,
+.comparison-result h4 {
+    color: var(--text-primary);
+}
+
+.list-group-item {
+    color: var(--text-primary) !important;
+    background-color: var(--darker-bg) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Preview buttons styling */
+.preview-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.preview-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.preview-btn:hover {
+    transform: translateY(-2px);
+}
+
+.track-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Share options styling */
+.share-options {
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.share-options .btn {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.share-options .btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn-outline-primary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Update track-item for better layout */
+.track-item {
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.track-info {
+    min-width: 0; /* Allows text truncation to work */
+}
+
+.track-info .name,
+.track-info .artist {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Enhanced Template Styles */
+.template-classic {
+    padding: 16px;
+    border-radius: 12px;
+    background: linear-gradient(45deg, #000000, #1a1a1a);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.classic-album .image-container {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.classic-album:hover .image-container {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.template-polaroid {
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.polaroid-album {
+    background: #ffffff;
+    padding: 12px 12px 35px 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    transform: rotate(0deg);
+    transition: all 0.4s ease;
+}
+
+.polaroid-album .album-info-overlay {
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    bottom: 0;
+    padding: 1rem 0.8rem 0.5rem;
+    text-align: center;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.polaroid-album .album-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.1rem;
+}
+
+.polaroid-album .artist-name {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.polaroid-album .play-count {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.1rem;
+}
+
+.polaroid-album .image-container {
+    border: 1px solid #eee;
+    position: relative;
+    overflow: hidden;
+}
+
+.polaroid-album:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.template-minimal {
+    background: transparent;
+    gap: 4px !important;
+}
+
+.minimal-album .image-container {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: grayscale(0.2);
+}
+
+.minimal-album:hover .image-container {
+    transform: scale(0.95);
+    filter: grayscale(0);
+}
+
+.minimal-album .album-info-overlay {
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    transform: translateY(0);
+}
+
+.minimal-album:hover .album-info-overlay {
+    opacity: 1;
+}
+
+.minimal-album .album-info {
+    text-align: center;
+}
+
+.template-mosaic {
+    padding: 8px;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.mosaic-album {
+    position: relative;
+    overflow: hidden;
+    transform: scale(1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mosaic-album::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.4),
+        rgba(0, 0, 0, 0.1),
+        rgba(255, 255, 255, 0.1)
+    );
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+.mosaic-album:hover {
+    transform: scale(1.05);
+    z-index: 2;
+}
+
+.mosaic-album:hover::before {
+    opacity: 0;
+}
+
+.template-vinyl {
+    padding: 24px;
+    background: linear-gradient(135deg, #121212, #1e1e1e);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.vinyl-album {
+    position: relative;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center center;
+}
+
+.vinyl-album::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20%;
+    height: 20%;
+    background: radial-gradient(circle, #000 30%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    transition: all 0.4s ease;
+    z-index: 2;
+}
+
+.vinyl-album::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-radial-gradient(
+        circle at center,
+        transparent 0,
+        transparent 10px,
+        rgba(0, 0, 0, 0.1) 10px,
+        rgba(0, 0, 0, 0.1) 12px
+    );
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.4s ease;
+    z-index: 1;
+}
+
+.vinyl-album:hover {
+    transform: rotate(30deg) scale(1.1);
+}
+
+.vinyl-album:hover::before {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.vinyl-album:hover::after {
+    opacity: 1;
+}
+
+.vinyl-album .image-container {
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Classic template text */
+.classic-album .album-info-overlay {
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(0, 0, 0, 0.8) 50%,
+        transparent 100%
+    );
+    padding: 1.5rem 1rem 0.8rem;
+}
+
+.classic-album .album-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+/* Mosaic template text */
+.mosaic-album .album-info-overlay {
+    background: linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.95),
+        rgba(0, 0, 0, 0.8)
+    );
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mosaic-album:hover .album-info-overlay {
+    opacity: 1;
+}
+
+/* Vinyl template text */
+.vinyl-album .album-info-overlay {
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at center,
+        transparent 20%,
+        rgba(0, 0, 0, 0.8) 50%,
+        rgba(0, 0, 0, 0.95) 100%
+    );
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.vinyl-album:hover .album-info-overlay {
+    opacity: 1;
+}
+
+.vinyl-album .album-info {
+    transform: rotate(-30deg);
+    transition: transform 0.5s ease;
+}
+
+.vinyl-album:hover .album-info {
+    transform: rotate(0deg);
+} 

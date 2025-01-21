@@ -35,6 +35,11 @@ const collageTemplates = {
 };
 
 async function generateCollage() {
+    if (!API_KEY) {
+        showAlert('Application not properly initialized. Please refresh the page.', 'danger');
+        return;
+    }
+
     const username = document.getElementById('username').value;
     if (!username) {
         showAlert('Please enter a Last.fm username', 'danger');
@@ -1206,6 +1211,11 @@ async function getSpotifyToken() {
 }
 
 async function generateProfileCard() {
+    if (!API_KEY) {
+        showAlert('Application not properly initialized. Please refresh the page.', 'danger');
+        return;
+    }
+
     const username = document.getElementById('username').value;
     if (!username) {
         showAlert('Please enter a Last.fm username', 'danger');
@@ -1500,14 +1510,36 @@ async function initializeApp() {
         const response = await fetch('/api/config');
         const config = await response.json();
         API_KEY = config.lastfmApiKey;
+        // Enable buttons after initialization
+        enableInterface();
     } catch (error) {
         console.error('Error initializing app:', error);
         showAlert('Error initializing application', 'danger');
+        disableInterface();
     }
 }
 
-// Call initializeApp when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
+// Add these helper functions
+function disableInterface() {
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.disabled = true;
+    });
+}
+
+function enableInterface() {
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.disabled = false;
+    });
+}
+
+// Update the initialization
+document.addEventListener('DOMContentLoaded', async () => {
+    // Disable interface until initialized
+    disableInterface();
+    // Initialize app
+    await initializeApp();
+    // Initialize mobile handling
     initializeMobileHandling();
 }); 

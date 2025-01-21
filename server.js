@@ -1,6 +1,18 @@
 const express = require('express');
 const path = require('path');
+const fetch = require('node-fetch');
 require('dotenv').config();
+
+// Add validation for required environment variables
+if (!process.env.LASTFM_API_KEY) {
+    console.error('LASTFM_API_KEY is not set in environment variables');
+    process.exit(1);
+}
+
+if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+    console.error('Spotify credentials are not set in environment variables');
+    process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;

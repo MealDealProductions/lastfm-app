@@ -1,9 +1,7 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
-require('dotenv').config();
-
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Serve static files from public directory
 app.use(express.static('public'));
@@ -13,6 +11,20 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Add environment variables to a config endpoint
+app.get('/config', (req, res) => {
+    res.json({
+        lastfm: {
+            apiKey: process.env.LASTFM_API_KEY
+        },
+        spotify: {
+            clientId: process.env.SPOTIFY_CLIENT_ID,
+            clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+        }
+    });
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 }); 

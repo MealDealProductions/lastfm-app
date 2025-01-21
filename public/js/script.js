@@ -1,7 +1,20 @@
-const API_KEY = '0c6105e548ab1c434b3594b2d21d4157';
 const API_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
-const SPOTIFY_CLIENT_ID = '58d185056aed477fb7ecb8668fe1199e';
-const SPOTIFY_CLIENT_SECRET = '90ce9387276c4e1ba8c5a3823cb390f0';
+
+// Global config object
+let config = {};
+
+// Initialize config before any API calls
+async function initializeConfig() {
+    try {
+        const response = await fetch('/config');
+        config = await response.json();
+        // Once config is loaded, enable the generate button
+        document.querySelector('.generate-btn').disabled = false;
+    } catch (error) {
+        console.error('Error loading config:', error);
+        showAlert('Error loading configuration', 'danger');
+    }
+}
 
 const collageTemplates = {
     classic: {
@@ -88,7 +101,7 @@ async function fetchTopAlbums(username, period, limit) {
         user: username,
         period: period,
         limit: limit,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -127,7 +140,7 @@ async function fetchBetterAlbumArt(artist, album) {
         method: 'album.getInfo',
         artist: artist,
         album: album,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -675,7 +688,7 @@ async function getUserInfo(username) {
     const params = new URLSearchParams({
         method: 'user.getInfo',
         user: username,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -690,7 +703,7 @@ async function getTopArtists(username, period = 'overall', limit = 10) {
         user: username,
         period: period,
         limit: limit,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -705,7 +718,7 @@ async function getTopTracks(username, period = 'overall', limit = 10) {
         user: username,
         period: period,
         limit: limit,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -719,7 +732,7 @@ async function getRecentTracks(username, limit = 10) {
         method: 'user.getRecentTracks',
         user: username,
         limit: limit,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -735,7 +748,7 @@ async function compareUsers(username1, username2) {
         type2: 'user',
         value1: username1,
         value2: username2,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -967,14 +980,22 @@ function copyLink() {
 }
 
 // Add this to handle URL parameters when page loads
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async () => {
+    document.querySelector('.generate-btn').disabled = true;
+    await initializeConfig();
+    initializeMobileHandling();
+    updateHistoryUI();
+    
+    // Add click event listener for generate button
+    document.querySelector('.generate-btn').addEventListener('click', generateCollage);
+    
+    // Handle URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const userParam = urlParams.get('user');
     if (userParam) {
         document.getElementById('username').value = userParam;
         generateCollage();
     }
-    updateHistoryUI();
 });
 
 // Add this helper function at the bottom of the file
@@ -1009,7 +1030,7 @@ async function fetchTopArtists(username, period, limit) {
         user: username,
         period: period,
         limit: limit,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -1049,7 +1070,7 @@ async function fetchTopTracks(username, period, limit) {
         user: username,
         period: period,
         limit: limit,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -1142,7 +1163,7 @@ async function fetchLastfmArtistImage(artistName) {
         method: 'artist.getTopAlbums',
         artist: artistName,
         limit: 1,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -1170,7 +1191,7 @@ async function fetchLastfmTrackImage(trackName, artistName) {
         method: 'track.getInfo',
         track: trackName,
         artist: artistName,
-        api_key: API_KEY,
+        api_key: config.lastfm.apiKey,
         format: 'json'
     });
 
@@ -1198,7 +1219,7 @@ async function getSpotifyToken() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Basic ' + btoa(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET)
+            'Authorization': 'Basic ' + btoa(config.spotify.clientId + ':' + config.spotify.clientSecret)
         },
         body: 'grant_type=client_credentials'
     });
@@ -1478,9 +1499,6 @@ function initializeMobileHandling() {
         }
     };
 }
-
-// Call this function when the page loads
-document.addEventListener('DOMContentLoaded', initializeMobileHandling);
 
 // Handle resize events
 let resizeTimeout;

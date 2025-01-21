@@ -1,7 +1,5 @@
-const API_KEY = '0c6105e548ab1c434b3594b2d21d4157';
-const API_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
-const SPOTIFY_CLIENT_ID = '58d185056aed477fb7ecb8668fe1199e';
-const SPOTIFY_CLIENT_SECRET = '90ce9387276c4e1ba8c5a3823cb390f0';
+let API_KEY;
+let API_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
 
 const collageTemplates = {
     classic: {
@@ -1194,16 +1192,17 @@ async function fetchLastfmTrackImage(trackName, artistName) {
 
 // Add Spotify authentication function
 async function getSpotifyToken() {
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Basic ' + btoa(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET)
-        },
-        body: 'grant_type=client_credentials'
-    });
-    const data = await response.json();
-    return data.access_token;
+    try {
+        const response = await fetch('/api/spotify-token');
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        return data.access_token;
+    } catch (error) {
+        console.error('Error getting Spotify token:', error);
+        throw error;
+    }
 }
 
 async function generateProfileCard() {
@@ -1493,4 +1492,22 @@ window.addEventListener('resize', () => {
             profileCard.style.maxWidth = window.innerWidth <= 768 ? '100%' : '600px';
         }
     }, 250);
+});
+
+// Initialize by getting API key
+async function initializeApp() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        API_KEY = config.lastfmApiKey;
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showAlert('Error initializing application', 'danger');
+    }
+}
+
+// Call initializeApp when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
+    initializeMobileHandling();
 }); 

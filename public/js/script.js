@@ -1,5 +1,7 @@
 const API_KEY = '0c6105e548ab1c434b3594b2d21d4157';
 const API_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
+const SPOTIFY_CLIENT_ID = '58d185056aed477fb7ecb8668fe1199e';
+const SPOTIFY_CLIENT_SECRET = '90ce9387276c4e1ba8c5a3823cb390f0';
 
 const collageTemplates = {
     classic: {
@@ -41,33 +43,41 @@ async function generateCollage() {
         return;
     }
 
-    // Get grid size from single input
     const gridSize = parseInt(document.getElementById('gridSize').value) || 3;
     if (gridSize < 2 || gridSize > 8) {
         showAlert('Grid size must be between 2 and 8', 'danger');
         return;
     }
 
-    // Show loading overlay
     document.getElementById('loadingOverlay').classList.remove('d-none');
     
     try {
-        // Load all tabs data
         await updateProfile(username);
         await updateTopCharts(username);
         await updateRecentTracks(username);
         
         const timeRange = document.getElementById('timeRange').value;
-        const limit = gridSize * gridSize; // Square grid
+        const collageType = document.getElementById('collageType').value;
+        const limit = gridSize * gridSize;
 
-        const albums = await fetchTopAlbums(username, timeRange, limit);
-        await createCollage(albums, gridSize, gridSize);
+        let items;
+        switch(collageType) {
+            case 'artists':
+                items = await fetchTopArtists(username, timeRange, limit);
+                break;
+            case 'tracks':
+                items = await fetchTopTracks(username, timeRange, limit);
+                break;
+            default:
+                items = await fetchTopAlbums(username, timeRange, limit);
+        }
+
+        await createCollage(items, gridSize, gridSize, collageType);
         showAlert('Data loaded successfully!', 'success');
     } catch (error) {
         console.error('Error:', error);
         showAlert('Error loading data. Please check the username and try again.', 'danger');
     } finally {
-        // Hide loading overlay
         document.getElementById('loadingOverlay').classList.add('d-none');
     }
 }
@@ -140,7 +150,7 @@ async function fetchBetterAlbumArt(artist, album) {
     return null;
 }
 
-function createCollage(albums, gridWidth, gridHeight) {
+function createCollage(items, gridWidth, gridHeight, type = 'albums') {
     const container = document.getElementById('collageContainer');
     container.innerHTML = '';
     
@@ -162,26 +172,42 @@ function createCollage(albums, gridWidth, gridHeight) {
     wrapper.className = template.containerClass;
     wrapper.id = 'collageWrapper';
     
-    const validAlbums = albums.filter(album => {
-        const image = album.image.find(img => 
-            img.size === 'mega' || 
-            img.size === 'extralarge' || 
-            img.size === 'large'
-        )['#text'];
+    const validItems = items.filter(item => {
+        let image;
+        if (type === 'albums') {
+            image = item.image.find(img => img.size === 'mega' || img.size === 'extralarge' || img.size === 'large')['#text'];
+        } else if (type === 'artists') {
+            image = item.image?.[3]?.['#text'] || item.image?.[2]?.['#text'];
+        } else { // tracks
+            image = item.image?.[3]?.['#text'] || item.album?.image?.[3]?.['#text'];
+        }
         return image && image.length > 0;
     });
 
-    if (validAlbums.length === 0) {
+    if (validItems.length === 0) {
         container.innerHTML = '<p>No album covers found for this time period.</p>';
         return;
     }
 
-    validAlbums.slice(0, gridWidth * gridHeight).forEach(album => {
-        const image = album.image.find(img => 
-            img.size === 'mega' || 
-            img.size === 'extralarge' || 
-            img.size === 'large'
-        )['#text'];
+    validItems.slice(0, gridWidth * gridHeight).forEach(item => {
+        let image, name, artist, plays;
+        
+        if (type === 'albums') {
+            image = item.image.find(img => img.size === 'mega' || img.size === 'extralarge' || img.size === 'large')['#text'];
+            name = item.name;
+            artist = item.artist.name;
+            plays = item.playcount;
+        } else if (type === 'artists') {
+            image = item.image?.[3]?.['#text'] || item.image?.[2]?.['#text'];
+            name = item.name;
+            artist = `${item.playcount} plays`;
+            plays = `#${item['@attr']?.rank || ''}`;
+        } else { // tracks
+            image = item.image?.[3]?.['#text'] || item.album?.image?.[3]?.['#text'];
+            name = item.name;
+            artist = item.artist.name;
+            plays = `${item.playcount} plays`;
+        }
         
         const secureImage = image.replace('http://', 'https://');
         
@@ -201,7 +227,7 @@ function createCollage(albums, gridWidth, gridHeight) {
         
         const img = document.createElement('img');
         img.src = secureImage;
-        img.alt = `${album.name} by ${album.artist.name}`;
+        img.alt = `${name} by ${artist}`;
         img.className = 'album-cover';
         img.crossOrigin = 'anonymous';
         
@@ -209,9 +235,9 @@ function createCollage(albums, gridWidth, gridHeight) {
         infoOverlay.className = 'album-info-overlay';
         infoOverlay.innerHTML = `
             <div class="album-info">
-                <p class="album-name">${album.name}</p>
-                <p class="artist-name">${album.artist.name}</p>
-                <p class="play-count">${album.playcount} plays</p>
+                <p class="album-name">${name}</p>
+                <p class="artist-name">${artist}</p>
+                <p class="play-count">${plays}</p>
             </div>
         `;
         
@@ -974,4 +1000,458 @@ document.addEventListener('DOMContentLoaded', function() {
         const mirrorInput = this.nextElementSibling.nextElementSibling;
         mirrorInput.value = value;
     });
+});
+
+// Add these new fetch functions
+async function fetchTopArtists(username, period, limit) {
+    const params = new URLSearchParams({
+        method: 'user.gettopartists',
+        user: username,
+        period: period,
+        limit: limit,
+        api_key: API_KEY,
+        format: 'json'
+    });
+
+    const response = await fetch(`${API_BASE_URL}?${params}`);
+    const data = await response.json();
+
+    if (data.error) {
+        throw new Error(data.message);
+    }
+
+    // Enhance artist images
+    const enhancedArtists = await Promise.all(
+        data.topartists.artist.map(async artist => {
+            try {
+                const betterImage = await fetchBetterArtistImage(artist.name);
+                if (betterImage) {
+                    artist.image = artist.image.map(img => {
+                        if (img.size === 'large' || img.size === 'extralarge') {
+                            return { ...img, '#text': betterImage };
+                        }
+                        return img;
+                    });
+                }
+            } catch (error) {
+                console.warn('Could not fetch better quality image for:', artist.name);
+            }
+            return artist;
+        })
+    );
+
+    return enhancedArtists;
+}
+
+async function fetchTopTracks(username, period, limit) {
+    const params = new URLSearchParams({
+        method: 'user.gettoptracks',
+        user: username,
+        period: period,
+        limit: limit,
+        api_key: API_KEY,
+        format: 'json'
+    });
+
+    const response = await fetch(`${API_BASE_URL}?${params}`);
+    const data = await response.json();
+
+    if (data.error) {
+        throw new Error(data.message);
+    }
+
+    // Enhance track images
+    const enhancedTracks = await Promise.all(
+        data.toptracks.track.map(async track => {
+            try {
+                const betterImage = await fetchBetterTrackImage(track.name, track.artist.name);
+                if (betterImage) {
+                    track.image = track.image.map(img => {
+                        if (img.size === 'large' || img.size === 'extralarge') {
+                            return { ...img, '#text': betterImage };
+                        }
+                        return img;
+                    });
+                }
+            } catch (error) {
+                console.warn('Could not fetch better quality image for:', track.name);
+            }
+            return track;
+        })
+    );
+
+    return enhancedTracks;
+}
+
+// Add these new functions for fetching better quality images
+async function fetchBetterArtistImage(artistName) {
+    try {
+        // Try Last.fm first
+        const lastfmImage = await fetchLastfmArtistImage(artistName);
+        if (lastfmImage) return lastfmImage;
+
+        // Fallback to Spotify
+        const spotifyToken = await getSpotifyToken();
+        const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, {
+            headers: {
+                'Authorization': `Bearer ${spotifyToken}`
+            }
+        });
+        const data = await response.json();
+        
+        if (data.artists?.items?.[0]?.images?.[0]?.url) {
+            return data.artists.items[0].images[0].url;
+        }
+    } catch (error) {
+        console.warn('Error fetching artist image:', error);
+    }
+    return null;
+}
+
+async function fetchBetterTrackImage(trackName, artistName) {
+    try {
+        // Try Last.fm first
+        const lastfmImage = await fetchLastfmTrackImage(trackName, artistName);
+        if (lastfmImage) return lastfmImage;
+
+        // Fallback to Spotify
+        const spotifyToken = await getSpotifyToken();
+        const response = await fetch(
+            `https://api.spotify.com/v1/search?q=${encodeURIComponent(trackName)}+artist:${encodeURIComponent(artistName)}&type=track&limit=1`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${spotifyToken}`
+                }
+            }
+        );
+        const data = await response.json();
+        
+        if (data.tracks?.items?.[0]?.album?.images?.[0]?.url) {
+            return data.tracks.items[0].album.images[0].url;
+        }
+    } catch (error) {
+        console.warn('Error fetching track image:', error);
+    }
+    return null;
+}
+
+// Helper functions for Last.fm image fetching
+async function fetchLastfmArtistImage(artistName) {
+    // Existing Last.fm image fetching code
+    const params = new URLSearchParams({
+        method: 'artist.getTopAlbums',
+        artist: artistName,
+        limit: 1,
+        api_key: API_KEY,
+        format: 'json'
+    });
+
+    try {
+        const response = await fetch(`${API_BASE_URL}?${params}`);
+        const data = await response.json();
+        
+        if (data.topalbums?.album?.[0]?.image) {
+            const images = data.topalbums.album[0].image;
+            const mega = images.find(img => img.size === 'mega');
+            const extralarge = images.find(img => img.size === 'extralarge');
+            
+            if (mega?.['#text']) return mega['#text'];
+            if (extralarge?.['#text']) return extralarge['#text'];
+        }
+    } catch (error) {
+        console.warn('Error fetching Last.fm artist image:', error);
+    }
+    return null;
+}
+
+async function fetchLastfmTrackImage(trackName, artistName) {
+    // Existing Last.fm image fetching code
+    const params = new URLSearchParams({
+        method: 'track.getInfo',
+        track: trackName,
+        artist: artistName,
+        api_key: API_KEY,
+        format: 'json'
+    });
+
+    try {
+        const response = await fetch(`${API_BASE_URL}?${params}`);
+        const data = await response.json();
+        
+        if (data.track?.album?.image) {
+            const images = data.track.album.image;
+            const mega = images.find(img => img.size === 'mega');
+            const extralarge = images.find(img => img.size === 'extralarge');
+            
+            if (mega?.['#text']) return mega['#text'];
+            if (extralarge?.['#text']) return extralarge['#text'];
+        }
+    } catch (error) {
+        console.warn('Error fetching Last.fm track image:', error);
+    }
+    return null;
+}
+
+// Add Spotify authentication function
+async function getSpotifyToken() {
+    const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': 'Basic ' + btoa(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET)
+        },
+        body: 'grant_type=client_credentials'
+    });
+    const data = await response.json();
+    return data.access_token;
+}
+
+async function generateProfileCard() {
+    const username = document.getElementById('username').value;
+    if (!username) {
+        showAlert('Please enter a Last.fm username', 'danger');
+        return;
+    }
+
+    const theme = document.getElementById('cardTheme').value;
+    const period = document.getElementById('cardPeriod').value;
+    
+    // Update loading text before showing overlay
+    document.querySelector('.loading-text').textContent = 'Generating your profile card...';
+    document.getElementById('loadingOverlay').classList.remove('d-none');
+    
+    try {
+        const userInfo = await getUserInfo(username);
+        const topArtists = await getTopArtists(username, period, 3);
+        const topTracks = await getTopTracks(username, period, 3);
+        
+        // Get Spotify token for image fetching
+        const spotifyToken = await getSpotifyToken();
+        
+        // Enhance artist images with Spotify
+        const enhancedArtists = await Promise.all(topArtists.map(async artist => {
+            try {
+                const spotifyResponse = await fetch(
+                    `https://api.spotify.com/v1/search?q=${encodeURIComponent(artist.name)}&type=artist&limit=1`,
+                    {
+                        headers: { 'Authorization': `Bearer ${spotifyToken}` }
+                    }
+                );
+                const spotifyData = await spotifyResponse.json();
+                const spotifyImage = spotifyData.artists?.items?.[0]?.images?.[0]?.url;
+                return {
+                    ...artist,
+                    imageUrl: spotifyImage || artist.image?.[3]?.['#text'] || 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
+                };
+            } catch (error) {
+                return {
+                    ...artist,
+                    imageUrl: artist.image?.[3]?.['#text'] || 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
+                };
+            }
+        }));
+
+        // Enhance track images with Spotify
+        const enhancedTracks = await Promise.all(topTracks.map(async track => {
+            try {
+                const spotifyResponse = await fetch(
+                    `https://api.spotify.com/v1/search?q=${encodeURIComponent(`${track.name} ${track.artist.name}`)}&type=track&limit=1`,
+                    {
+                        headers: { 'Authorization': `Bearer ${spotifyToken}` }
+                    }
+                );
+                const spotifyData = await spotifyResponse.json();
+                const spotifyImage = spotifyData.tracks?.items?.[0]?.album?.images?.[0]?.url;
+                return {
+                    ...track,
+                    imageUrl: spotifyImage || track.image?.[3]?.['#text'] || 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
+                };
+            } catch (error) {
+                return {
+                    ...track,
+                    imageUrl: track.image?.[3]?.['#text'] || 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'
+                };
+            }
+        }));
+        
+        const profileCard = document.getElementById('profileCard');
+        profileCard.className = `profile-card theme-${theme}`;
+        
+        profileCard.innerHTML = `
+            <div class="user-header">
+                <img src="${userInfo.image?.[3]?.['#text'] || 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png'}" 
+                     class="user-avatar" alt="Profile picture" crossOrigin="anonymous">
+                <div class="user-info">
+                    <h2>${userInfo.name}</h2>
+                    <p class="text-muted">Scrobbling since ${new Date(userInfo.registered.unixtime * 1000).getFullYear()}</p>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>${parseInt(userInfo.playcount).toLocaleString()}</h3>
+                    <p>Total Scrobbles</p>
+                </div>
+                <div class="stat-item">
+                    <h3>${period === 'overall' ? 'All Time' : formatPeriod(period)}</h3>
+                    <p>Time Period</p>
+                </div>
+            </div>
+            <div class="top-section">
+                <h4 class="mb-3">Top Artists</h4>
+                <div class="top-items">
+                    ${enhancedArtists.map(artist => `
+                        <div class="item-card">
+                            <img src="${artist.imageUrl}" alt="${artist.name}" crossOrigin="anonymous">
+                            <p class="item-name">${artist.name}</p>
+                            <small class="text-muted">${artist.playcount} plays</small>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="top-section mt-4">
+                <h4 class="mb-3">Top Tracks</h4>
+                <div class="top-items">
+                    ${enhancedTracks.map(track => `
+                        <div class="item-card">
+                            <img src="${track.imageUrl}" alt="${track.name}" crossOrigin="anonymous">
+                            <p class="item-name">${track.name}</p>
+                            <div class="item-details">
+                                <small class="text-muted d-block">${track.artist.name}</small>
+                                <small class="text-muted d-block">${track.playcount} plays</small>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('downloadCardBtn').style.display = 'block';
+        showAlert('Profile card generated successfully!', 'success');
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Error generating profile card', 'danger');
+    } finally {
+        document.getElementById('loadingOverlay').classList.add('d-none');
+        // Reset loading text back for collage generation
+        document.querySelector('.loading-text').textContent = 'Generating your collage...';
+    }
+}
+
+function downloadProfileCard() {
+    const card = document.getElementById('profileCard');
+    
+    // Show loading indicator
+    showAlert('Preparing download...', 'info');
+    
+    // Pre-load all images
+    const images = Array.from(card.getElementsByTagName('img'));
+    Promise.all(images.map(img => {
+        return new Promise((resolve, reject) => {
+            const newImg = new Image();
+            newImg.crossOrigin = 'anonymous';
+            newImg.onload = () => {
+                // Replace original image with loaded one
+                img.src = newImg.src;
+                resolve();
+            };
+            newImg.onerror = () => {
+                console.warn(`Failed to load image: ${img.src}`);
+                resolve(); // Continue even if one image fails
+            };
+            // Force HTTPS and add cache buster
+            newImg.src = img.src.replace('http://', 'https://') + '?t=' + new Date().getTime();
+        });
+    })).then(() => {
+        // Once all images are loaded, create canvas
+        html2canvas(card, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: card.style.backgroundColor || '#000000',
+            logging: true,
+            onclone: function(clonedDoc) {
+                // Ensure cloned elements maintain styles
+                const clonedCard = clonedDoc.getElementById('profileCard');
+                clonedCard.style.width = card.offsetWidth + 'px';
+                clonedCard.style.height = card.offsetHeight + 'px';
+            }
+        }).then(canvas => {
+            try {
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `lastfm-profile-card-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showAlert('Download complete!', 'success');
+            } catch (err) {
+                console.error('Download error:', err);
+                showAlert('Error creating download', 'danger');
+            }
+        }).catch(err => {
+            console.error('Canvas error:', err);
+            showAlert('Error generating image', 'danger');
+        });
+    }).catch(err => {
+        console.error('Image loading error:', err);
+        showAlert('Error loading images', 'danger');
+    });
+}
+
+function formatPeriod(period) {
+    const periods = {
+        '7day': 'Last 7 Days',
+        '1month': 'Last Month',
+        '3month': 'Last 3 Months',
+        '6month': 'Last 6 Months',
+        '12month': 'Last Year',
+        'overall': 'All Time'
+    };
+    return periods[period] || period;
+}
+
+// Add this function to handle mobile-specific behaviors
+function initializeMobileHandling() {
+    // Handle tab switching on mobile
+    const tabs = document.querySelectorAll('.nav-link');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                // Scroll to content area
+                const tabContent = document.querySelector(tab.getAttribute('href'));
+                if (tabContent) {
+                    setTimeout(() => {
+                        tabContent.scrollIntoView({ behavior: 'smooth' });
+                    }, 150);
+                }
+            }
+        });
+    });
+
+    // Adjust profile card generation for mobile
+    const originalGenerateProfileCard = generateProfileCard;
+    generateProfileCard = async function() {
+        await originalGenerateProfileCard();
+        if (window.innerWidth <= 768) {
+            const profileCard = document.getElementById('profileCard');
+            profileCard.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+}
+
+// Call this function when the page loads
+document.addEventListener('DOMContentLoaded', initializeMobileHandling);
+
+// Handle resize events
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // Adjust layout for current screen size
+        const profileCard = document.getElementById('profileCard');
+        if (profileCard) {
+            profileCard.style.maxWidth = window.innerWidth <= 768 ? '100%' : '600px';
+        }
+    }, 250);
 }); 

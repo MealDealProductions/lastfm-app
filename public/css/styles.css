@@ -352,8 +352,22 @@ body {
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
     .card-body {
-        padding: 1.5rem;
+        padding: 1rem;
+    }
+    .form-container {
+        padding: 1rem;
+    }
+    .form-label {
+        font-size: 0.85rem;
+    }
+    .form-control-lg, 
+    .form-select-lg {
+        font-size: 0.95rem;
+        padding: 0.5rem 1rem;
     }
     .album-info {
         font-size: 0.8rem;
@@ -364,35 +378,72 @@ body {
     #collageContainer {
         padding: 0 10px;
     }
-    .form-container {
-        padding: 1.5rem;
+    .profile-card {
+        padding: 1rem;
     }
-    .form-control, .form-select {
-        font-size: 0.9rem;
+    .profile-card .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
-    .generate-btn {
-        height: 3.2rem;
-        font-size: 1rem;
+    .profile-card .top-items {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
-    .form-label {
+    .profile-card .item-card {
+        padding: 0.5rem;
+    }
+    .profile-card .item-card img {
+        width: 56px;
+        height: 56px;
+    }
+    .profile-card .item-name {
         font-size: 0.8rem;
     }
-    .album-info-overlay {
-        padding: 0.8rem;
-    }
-    .album-name {
-        font-size: 0.8rem;
-    }
-    .artist-name {
+    .profile-card .item-details small {
         font-size: 0.75rem;
     }
-    .play-count {
-        font-size: 0.7rem;
+    .profile-card .user-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    .profile-card .user-header img {
+        margin: 0 auto;
+    }
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 0.95rem;
+    }
+    .nav-tabs .nav-link {
+        padding: 0.5rem;
+        font-size: 0.85rem;
     }
     .album-item,
     .album-item.small,
     .album-item.very-small {
         font-size: 1rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+    .profile-card .top-items {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    .profile-card .item-card img {
+        width: 48px;
+        height: 48px;
+    }
+    .profile-card .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    .form-container .row {
+        margin: 0 -0.5rem;
+    }
+    .form-container [class*="col-"] {
+        padding: 0 0.5rem;
     }
 }
 
@@ -996,4 +1047,156 @@ body {
     .container {
         max-width: 1600px !important;
     }
+}
+
+/* Profile Card Styles */
+.profile-card {
+    background: var(--darker-bg);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+}
+
+/* Dark Theme */
+.profile-card.theme-dark {
+    background: #121212;
+    color: #ffffff;
+}
+
+.profile-card.theme-dark .item-card {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-card.theme-dark .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Gradient Theme */
+.profile-card.theme-gradient {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #ffffff;
+}
+
+.profile-card.theme-gradient .item-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+}
+
+.profile-card.theme-gradient .text-muted {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Minimal Theme */
+.profile-card.theme-minimal {
+    background: #ffffff;
+    color: #000000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.profile-card.theme-minimal .item-card {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.profile-card.theme-minimal .text-muted {
+    color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.profile-card.theme-minimal h2,
+.profile-card.theme-minimal h3,
+.profile-card.theme-minimal h4 {
+    color: #000000;
+}
+
+/* Fix for top artists and tracks sections in minimal theme */
+.profile-card.theme-minimal .top-section .item-card {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.profile-card.theme-minimal .top-section .item-card .item-name {
+    color: #ffffff;
+}
+
+.profile-card.theme-minimal .top-section .item-card .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.profile-card.theme-minimal .top-section .item-details small {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Retro Theme */
+.profile-card.theme-retro {
+    background: #2d142c;
+    color: #ffffff;
+    border: 2px solid #ee4540;
+}
+
+.profile-card.theme-retro .item-card {
+    background: rgba(238, 69, 64, 0.2);
+    border: 1px solid rgba(238, 69, 64, 0.3);
+}
+
+.profile-card.theme-retro .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Common styles for all themes */
+.profile-card .item-card {
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.profile-card .item-card:hover {
+    transform: translateY(-2px);
+}
+
+.profile-card .item-card img {
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.profile-card .item-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.profile-card .item-details {
+    margin-top: 0.25rem;
+}
+
+.profile-card .item-details small {
+    line-height: 1.2;
+    display: block;
+}
+
+.profile-card .item-details small:first-child {
+    margin-bottom: 0.1rem;
+}
+
+.profile-card h2,
+.profile-card h3,
+.profile-card h4 {
+    margin-bottom: 0.5rem;
+}
+
+.profile-card .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.profile-card .top-items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
 } 

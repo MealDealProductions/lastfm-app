@@ -1350,19 +1350,16 @@ function downloadProfileCard() {
             const newImg = new Image();
             newImg.crossOrigin = 'anonymous';
             newImg.onload = () => {
-                // Replace original image with loaded one
                 img.src = newImg.src;
                 resolve();
             };
             newImg.onerror = () => {
                 console.warn(`Failed to load image: ${img.src}`);
-                resolve(); // Continue even if one image fails
+                resolve();
             };
-            // Force HTTPS and add cache buster
             newImg.src = img.src.replace('http://', 'https://') + '?t=' + new Date().getTime();
         });
     })).then(() => {
-        // Once all images are loaded, create canvas
         html2canvas(card, {
             scale: 2,
             useCORS: true,
@@ -1370,21 +1367,63 @@ function downloadProfileCard() {
             backgroundColor: card.style.backgroundColor || '#000000',
             logging: true,
             onclone: function(clonedDoc) {
-                // Ensure cloned elements maintain styles
                 const clonedCard = clonedDoc.getElementById('profileCard');
                 clonedCard.style.width = card.offsetWidth + 'px';
                 clonedCard.style.height = card.offsetHeight + 'px';
             }
         }).then(canvas => {
             try {
-                // Create download link
-                const link = document.createElement('a');
-                link.download = `lastfm-profile-card-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showAlert('Download complete!', 'success');
+                // For mobile devices, open image in new tab
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    // Convert canvas to blob
+                    canvas.toBlob(function(blob) {
+                        const url = URL.createObjectURL(blob);
+                        
+                        // Create modal to show download options
+                        const modal = document.createElement('div');
+                        modal.style.position = 'fixed';
+                        modal.style.top = '0';
+                        modal.style.left = '0';
+                        modal.style.right = '0';
+                        modal.style.bottom = '0';
+                        modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                        modal.style.zIndex = '9999';
+                        modal.style.display = 'flex';
+                        modal.style.flexDirection = 'column';
+                        modal.style.alignItems = 'center';
+                        modal.style.justifyContent = 'center';
+                        modal.style.padding = '20px';
+                        
+                        modal.innerHTML = `
+                            <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center;">
+                                <h4 style="color: white; margin-bottom: 15px;">Download Options</h4>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <button onclick="window.open('${url}', '_blank')" class="btn btn-primary">
+                                        Open Image in New Tab
+                                    </button>
+                                    <a href="${url}" download="lastfm-profile-card.png" class="btn btn-success">
+                                        Direct Download
+                                    </a>
+                                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="btn btn-secondary">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(modal);
+                        showAlert('Choose your download option', 'success');
+                    }, 'image/png');
+                } else {
+                    // Desktop download
+                    const link = document.createElement('a');
+                    link.download = `lastfm-profile-card-${Date.now()}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showAlert('Download complete!', 'success');
+                }
             } catch (err) {
                 console.error('Download error:', err);
                 showAlert('Error creating download', 'danger');

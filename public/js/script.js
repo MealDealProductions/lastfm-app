@@ -1,18 +1,21 @@
 const API_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
-
-// Global config object
-let config = {};
+let config = null;
 
 // Initialize config before any API calls
 async function initializeConfig() {
     try {
         const response = await fetch('/config');
+        if (!response.ok) {
+            throw new Error('Failed to load configuration');
+        }
         config = await response.json();
-        // Once config is loaded, enable the generate button
+        // Enable buttons once config is loaded
         document.querySelector('.generate-btn').disabled = false;
+        return true;
     } catch (error) {
         console.error('Error loading config:', error);
-        showAlert('Error loading configuration', 'danger');
+        showAlert('Error loading configuration. Please try again later.', 'danger');
+        return false;
     }
 }
 
@@ -50,6 +53,11 @@ const collageTemplates = {
 };
 
 async function generateCollage() {
+    if (!config) {
+        const configLoaded = await initializeConfig();
+        if (!configLoaded) return;
+    }
+    
     const username = document.getElementById('username').value;
     if (!username) {
         showAlert('Please enter a Last.fm username', 'danger');
@@ -96,6 +104,7 @@ async function generateCollage() {
 }
 
 async function fetchTopAlbums(username, period, limit) {
+    ensureConfig();
     const params = new URLSearchParams({
         method: 'user.gettopalbums',
         user: username,
@@ -981,8 +990,17 @@ function copyLink() {
 
 // Add this to handle URL parameters when page loads
 document.addEventListener('DOMContentLoaded', async () => {
+    // Disable buttons until config is loaded
     document.querySelector('.generate-btn').disabled = true;
-    await initializeConfig();
+    
+    // Initialize config first
+    const configLoaded = await initializeConfig();
+    if (!configLoaded) {
+        showAlert('Failed to load configuration. Please refresh the page.', 'danger');
+        return;
+    }
+
+    // Initialize other features
     initializeMobileHandling();
     updateHistoryUI();
     
@@ -1511,4 +1529,11 @@ window.addEventListener('resize', () => {
             profileCard.style.maxWidth = window.innerWidth <= 768 ? '100%' : '600px';
         }
     }, 250);
-}); 
+});
+
+// Add a helper function to check config
+function ensureConfig() {
+    if (!config || !config.lastfm || !config.lastfm.apiKey) {
+        throw new Error('Configuration not loaded properly');
+    }
+} 

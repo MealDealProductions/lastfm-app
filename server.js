@@ -13,6 +13,10 @@ app.get('/', (req, res) => {
 
 // Add environment variables to a config endpoint
 app.get('/config', (req, res) => {
+    if (!process.env.LASTFM_API_KEY || !process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+        return res.status(500).json({ error: 'Server configuration missing' });
+    }
+    
     res.json({
         lastfm: {
             apiKey: process.env.LASTFM_API_KEY

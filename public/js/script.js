@@ -1,5 +1,6 @@
 let API_KEY;
 let API_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
+let currentUsername = '';
 
 const collageTemplates = {
     classic: {
@@ -35,14 +36,8 @@ const collageTemplates = {
 };
 
 async function generateCollage() {
-    if (!API_KEY) {
-        showAlert('Application not properly initialized. Please refresh the page.', 'danger');
-        return;
-    }
-
-    const username = document.getElementById('username').value;
-    if (!username) {
-        showAlert('Please enter a Last.fm username', 'danger');
+    if (!currentUsername) {
+        showAlert('Please set a Last.fm username first', 'danger');
         return;
     }
 
@@ -55,9 +50,9 @@ async function generateCollage() {
     document.getElementById('loadingOverlay').classList.remove('d-none');
     
     try {
-        await updateProfile(username);
-        await updateTopCharts(username);
-        await updateRecentTracks(username);
+        await updateProfile(currentUsername);
+        await updateTopCharts(currentUsername);
+        await updateRecentTracks(currentUsername);
         
         const timeRange = document.getElementById('timeRange').value;
         const collageType = document.getElementById('collageType').value;
@@ -66,13 +61,13 @@ async function generateCollage() {
         let items;
         switch(collageType) {
             case 'artists':
-                items = await fetchTopArtists(username, timeRange, limit);
+                items = await fetchTopArtists(currentUsername, timeRange, limit);
                 break;
             case 'tracks':
-                items = await fetchTopTracks(username, timeRange, limit);
+                items = await fetchTopTracks(currentUsername, timeRange, limit);
                 break;
             default:
-                items = await fetchTopAlbums(username, timeRange, limit);
+                items = await fetchTopAlbums(currentUsername, timeRange, limit);
         }
 
         await createCollage(items, gridSize, gridSize, collageType);
@@ -175,6 +170,14 @@ function createCollage(items, gridWidth, gridHeight, type = 'albums') {
     wrapper.className = template.containerClass;
     wrapper.id = 'collageWrapper';
     
+    const showRank = document.getElementById('showRank').checked;
+    const showPlaycount = document.getElementById('showPlaycount').checked;
+    const customGap = document.getElementById('gapSize').value + 'px';
+    const customBg = document.getElementById('bgColor').value;
+
+    wrapper.style.gap = customGap;
+    wrapper.style.backgroundColor = customBg;
+
     const validItems = items.filter(item => {
         let image;
         if (type === 'albums') {
@@ -192,7 +195,7 @@ function createCollage(items, gridWidth, gridHeight, type = 'albums') {
         return;
     }
 
-    validItems.slice(0, gridWidth * gridHeight).forEach(item => {
+    validItems.slice(0, gridWidth * gridHeight).forEach((item, index) => {
         let image, name, artist, plays;
         
         if (type === 'albums') {
@@ -247,6 +250,21 @@ function createCollage(items, gridWidth, gridHeight, type = 'albums') {
         imgContainer.appendChild(img);
         imgContainer.appendChild(infoOverlay);
         albumContainer.appendChild(imgContainer);
+
+        if (showRank) {
+            const rankBadge = document.createElement('div');
+            rankBadge.className = 'rank-badge';
+            rankBadge.textContent = `#${index + 1}`;
+            albumContainer.appendChild(rankBadge);
+        }
+
+        if (showPlaycount && item.playcount) {
+            const playcountBadge = document.createElement('div');
+            playcountBadge.className = 'playcount-badge';
+            playcountBadge.textContent = `${parseInt(item.playcount).toLocaleString()} plays`;
+            albumContainer.appendChild(playcountBadge);
+        }
+
         wrapper.appendChild(albumContainer);
     });
 
@@ -269,288 +287,109 @@ function downloadCollage() {
     const wrapper = document.getElementById('collageWrapper');
     if (!wrapper) return;
 
-    const showText = document.getElementById('showText').checked;
-    const gridSize = parseInt(document.getElementById('gridSize').value);
-    
     showAlert('Generating high-quality image, please wait...', 'info');
 
+    // Create a container with fixed dimensions
+    const container = document.createElement('div');
+    container.style.width = wrapper.offsetWidth + 'px';
+    container.style.height = wrapper.offsetHeight + 'px';
+    container.style.position = 'fixed';
+    container.style.top = '-9999px';
+    container.style.left = '-9999px';
+    container.appendChild(wrapper.cloneNode(true));
+    document.body.appendChild(container);
+
     const templateStyle = document.getElementById('templateStyle').value;
-    const template = collageTemplates[templateStyle];
+    const showText = document.getElementById('showText').checked;
+    const gridSize = parseInt(document.getElementById('gridSize').value);
+    const customGap = document.getElementById('gapSize').value;
+    const customBorderRadius = document.getElementById('borderRadius').value;
+    const customBgColor = document.getElementById('bgColor').value;
+    const showRank = document.getElementById('showRank').checked;
+    const showPlaycount = document.getElementById('showPlaycount').checked;
 
-    const tempCanvas = document.createElement('canvas');
-    const ctx = tempCanvas.getContext('2d');
-    
-    // Adjust scale based on grid size to prevent canvas size limits
-    let scale;
-    if (gridSize <= 5) {
-        scale = 8;
-    } else if (gridSize <= 7) {
-        scale = 6;
-    } else if (gridSize <= 8) {
-        scale = 4;
-    } else {
-        scale = 3;
-    }
-    
-    // Calculate dimensions with a maximum size limit
-    const maxDimension = 12000; // Reduced maximum size
-    let canvasWidth = wrapper.offsetWidth * scale;
-    let canvasHeight = wrapper.offsetHeight * scale;
-    
-    // Scale down if dimensions are too large
-    if (canvasWidth > maxDimension || canvasHeight > maxDimension) {
-        const ratio = maxDimension / Math.max(canvasWidth, canvasHeight);
-        canvasWidth *= ratio;
-        canvasHeight *= ratio;
-        scale *= ratio;
-    }
-    
-    tempCanvas.width = canvasWidth;
-    tempCanvas.height = canvasHeight;
-    
-    // Enable image smoothing for better quality
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    // Apply styles to cloned element
+    const clonedWrapper = container.firstChild;
+    clonedWrapper.style.gap = `${customGap}px`;
+    clonedWrapper.style.backgroundColor = customBgColor;
 
-    // Apply template background
-    if (template.background.includes('gradient')) {
-        const gradient = ctx.createLinearGradient(0, 0, tempCanvas.width, tempCanvas.height);
-        if (templateStyle === 'classic') {
-            gradient.addColorStop(0, '#000000');
-            gradient.addColorStop(1, '#1a1a1a');
-        }
-        ctx.fillStyle = gradient;
-    } else {
-        ctx.fillStyle = template.background;
-    }
-    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    // Adjust scale based on grid size
+    let scale = gridSize <= 5 ? 8 : gridSize <= 7 ? 6 : gridSize <= 8 ? 4 : 3;
 
-    const albumItems = wrapper.getElementsByClassName('album-item');
-    const loadedImages = [];
-    let loadedCount = 0;
-
-    Array.from(albumItems).forEach((item, index) => {
-        const img = item.querySelector('img');
-        const albumInfo = item.querySelector('.album-info');
-        const tempImg = new Image();
-        tempImg.crossOrigin = 'anonymous';
-        
-        tempImg.onload = () => {
-            loadedImages[index] = {
-                image: tempImg,
-                info: {
-                    album: albumInfo.querySelector('.album-name').textContent,
-                    artist: albumInfo.querySelector('.artist-name').textContent,
-                    plays: albumInfo.querySelector('.play-count').textContent
-                }
-            };
-            loadedCount++;
-            
-            if (loadedCount === albumItems.length) {
-                const gridSize = Math.sqrt(albumItems.length);
-                const imgSize = (tempCanvas.width - (scale * parseInt(template.gap) * (gridSize + 1))) / gridSize;
-                
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                
-                loadedImages.forEach((item, i) => {
-                    const row = Math.floor(i / gridSize);
-                    const col = i % gridSize;
-                    const x = col * (imgSize + scale * parseInt(template.gap)) + scale * parseInt(template.gap);
-                    const y = row * (imgSize + scale * parseInt(template.gap)) + scale * parseInt(template.gap);
-                    
-                    // Apply template-specific styling
-                    switch(templateStyle) {
-                        case 'polaroid':
-                            // Draw white polaroid frame with more space for text
-                            ctx.fillStyle = '#ffffff';
-                            const frameTop = scale * 10;
-                            const frameBottom = scale * 60; // Increased bottom padding for text
-                            const frameSides = scale * 10;
-                            
-                            ctx.fillRect(
-                                x - frameSides, 
-                                y - frameTop, 
-                                imgSize + (frameSides * 2), 
-                                imgSize + frameTop + frameBottom
-                            );
-                            
-                            // Draw the image
-                            ctx.drawImage(item.image, x, y, imgSize, imgSize);
-                            
-                            if (showText) {
-                                // Add text below the image
-                                ctx.fillStyle = '#000000';
-                                ctx.textAlign = 'center';
-                                ctx.shadowColor = 'rgba(0, 0, 0, 0)';
-                                ctx.shadowBlur = 0;
-                                
-                                const textStartY = y + imgSize + scale * 10; // Start text closer to image
-                                
-                                // Album name (larger and bolder)
-                                ctx.font = `bold ${scale * 7}px Helvetica`;
-                                const albumText = truncateText(item.info.album, ctx, imgSize - scale * 15);
-                                ctx.fillText(albumText, x + imgSize/2, textStartY);
-                                
-                                // Artist name (medium size)
-                                ctx.font = `${scale * 6}px Helvetica`;
-                                ctx.fillStyle = '#444444';
-                                const artistText = truncateText(item.info.artist, ctx, imgSize - scale * 15);
-                                ctx.fillText(artistText, x + imgSize/2, textStartY + scale * 10);
-                                
-                                // Play count (smaller)
-                                ctx.font = `${scale * 5}px Helvetica`;
-                                ctx.fillStyle = '#666666';
-                                ctx.fillText(item.info.plays, x + imgSize/2, textStartY + scale * 20);
-                            }
-                            break;
-                            
-                        case 'vinyl':
-                            // Draw circular vinyl
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(x + imgSize/2, y + imgSize/2, imgSize/2, 0, Math.PI * 2);
-                            ctx.clip();
-                            ctx.drawImage(item.image, x, y, imgSize, imgSize);
-                            ctx.restore();
-                            
-                            if (showText) {
-                                // Add text
-                                ctx.textAlign = 'center';
-                                ctx.fillStyle = '#ffffff';
-                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                                ctx.shadowBlur = scale*2;
-                                
-                                // Album name
-                                ctx.font = `bold ${scale*7}px Helvetica`;
-                                const vinylAlbumText = truncateText(item.info.album, ctx, imgSize*0.7);
-                                ctx.fillText(vinylAlbumText, x + imgSize/2, y + imgSize/2);
-                                
-                                // Artist name
-                                ctx.font = `${scale*5}px Helvetica`;
-                                const vinylArtistText = truncateText(item.info.artist, ctx, imgSize*0.7);
-                                ctx.fillText(vinylArtistText, x + imgSize/2, y + imgSize/2 + scale*8);
-                            }
-                            break;
-                            
-                        case 'minimal':
-                            ctx.drawImage(item.image, x, y, imgSize, imgSize);
-                            
-                            if (showText) {
-                                // Add minimal overlay
-                                const minimalGradient = ctx.createLinearGradient(x, y + imgSize - scale*60, x, y + imgSize);
-                                minimalGradient.addColorStop(0, 'rgba(0,0,0,0)');
-                                minimalGradient.addColorStop(1, 'rgba(0,0,0,0.9)');
-                                ctx.fillStyle = minimalGradient;
-                                ctx.fillRect(x, y + imgSize - scale*60, imgSize, scale*60);
-                                
-                                // Add text
-                                ctx.textAlign = 'center';
-                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                                ctx.shadowBlur = scale*2;
-                                
-                                // Album name
-                                ctx.font = `bold ${scale*6}px Helvetica`;
-                                ctx.fillStyle = '#ffffff';
-                                const minimalAlbumText = truncateText(item.info.album, ctx, imgSize - scale*10);
-                                ctx.fillText(minimalAlbumText, x + imgSize/2, y + imgSize - scale*25);
-                                
-                                // Artist name
-                                ctx.font = `${scale*5}px Helvetica`;
-                                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                                const minimalArtistText = truncateText(item.info.artist, ctx, imgSize - scale*10);
-                                ctx.fillText(minimalArtistText, x + imgSize/2, y + imgSize - scale*12);
-                            }
-                            break;
-                            
-                        case 'mosaic':
-                            ctx.drawImage(item.image, x, y, imgSize, imgSize);
-                            
-                            if (showText) {
-                                // Add mosaic overlay
-                                const mosaicGradient = ctx.createLinearGradient(x, y + imgSize - scale*80, x, y + imgSize);
-                                mosaicGradient.addColorStop(0, 'rgba(0,0,0,0)');
-                                mosaicGradient.addColorStop(1, 'rgba(0,0,0,0.95)');
-                                ctx.fillStyle = mosaicGradient;
-                                ctx.fillRect(x, y + imgSize - scale*80, imgSize, scale*80);
-                                
-                                // Add text
-                                ctx.textAlign = 'center';
-                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                                ctx.shadowBlur = scale*2;
-                                
-                                // Album name
-                                ctx.font = `bold ${scale*7}px Helvetica`;
-                                ctx.fillStyle = '#ffffff';
-                                const mosaicAlbumText = truncateText(item.info.album, ctx, imgSize - scale*15);
-                                ctx.fillText(mosaicAlbumText, x + imgSize/2, y + imgSize - scale*30);
-                                
-                                // Artist name
-                                ctx.font = `${scale*5}px Helvetica`;
-                                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                                const mosaicArtistText = truncateText(item.info.artist, ctx, imgSize - scale*15);
-                                ctx.fillText(mosaicArtistText, x + imgSize/2, y + imgSize - scale*15);
-                            }
-                            break;
-                            
-                        default: // classic
-                            ctx.drawImage(item.image, x, y, imgSize, imgSize);
-                            
-                            if (showText) {
-                                // Add classic overlay
-                                const classicGradient = ctx.createLinearGradient(x, y + imgSize - scale*70, x, y + imgSize);
-                                classicGradient.addColorStop(0, 'rgba(0,0,0,0)');
-                                classicGradient.addColorStop(1, 'rgba(0,0,0,0.95)');
-                                ctx.fillStyle = classicGradient;
-                                ctx.fillRect(x, y + imgSize - scale*70, imgSize, scale*70);
-                                
-                                // Add text
-                                ctx.textAlign = 'center';
-                                ctx.shadowColor = 'rgba(0,0,0,0.5)';
-                                ctx.shadowBlur = scale*2;
-                                
-                                // Album name
-                                ctx.font = `bold ${scale*7}px Helvetica`;
-                                ctx.fillStyle = '#ffffff';
-                                const classicAlbumText = truncateText(item.info.album, ctx, imgSize - scale*15);
-                                ctx.fillText(classicAlbumText, x + imgSize/2, y + imgSize - scale*30);
-                                
-                                // Artist name
-                                ctx.font = `${scale*5}px Helvetica`;
-                                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                                const classicArtistText = truncateText(item.info.artist, ctx, imgSize - scale*15);
-                                ctx.fillText(classicArtistText, x + imgSize/2, y + imgSize - scale*15);
-                            }
-                            break;
-                    }
-
-                    // Reset shadow effect after drawing text
-                    ctx.shadowColor = 'transparent';
-                    ctx.shadowBlur = 0;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 0;
-                });
-
-                try {
-                    const link = document.createElement('a');
-                    link.download = `lastfm-collage-${templateStyle}.png`;
-                    link.href = tempCanvas.toDataURL('image/png', 1.0);
-                    link.click();
-                    showAlert('Download complete!', 'success');
-                } catch (err) {
-                    console.error('Error creating download:', err);
-                    showAlert('Error creating download. Please try again.', 'danger');
-                }
+    html2canvas(clonedWrapper, {
+        scale: scale,
+        backgroundColor: customBgColor,
+        logging: false,
+        useCORS: true,
+        allowTaint: false,
+        onclone: function(clonedDoc) {
+            const element = clonedDoc.querySelector('#collageWrapper');
+            if (element) {
+                element.style.width = wrapper.offsetWidth + 'px';
+                element.style.height = wrapper.offsetHeight + 'px';
             }
-        };
-        
-        tempImg.onerror = () => {
-            console.error('Error loading image:', img.src);
-            loadedCount++;
-        };
-        
-        tempImg.src = img.src;
+        }
+    }).then(canvas => {
+        try {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    showMobileDownloadOptions(url);
+                }, 'image/png');
+            } else {
+                const link = document.createElement('a');
+                link.download = `lastfm-collage-${templateStyle}-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showAlert('Download complete!', 'success');
+            }
+        } catch (err) {
+            console.error('Download error:', err);
+            showAlert('Error creating download', 'danger');
+        } finally {
+            document.body.removeChild(container);
+        }
+    }).catch(err => {
+        console.error('Canvas error:', err);
+        showAlert('Error generating image', 'danger');
+        document.body.removeChild(container);
     });
+}
+
+function showMobileDownloadOptions(url) {
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.right = '0';
+    modal.style.bottom = '0';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+    modal.style.zIndex = '9999';
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.padding = '20px';
+    
+    modal.innerHTML = `
+        <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center;">
+            <h4 style="color: white; margin-bottom: 15px;">Download Options</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="window.open('${url}', '_blank')" class="btn btn-primary">
+                    Open Image in New Tab
+                </button>
+                <a href="${url}" download="lastfm-collage.png" class="btn btn-success">
+                    Direct Download
+                </a>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" class="btn btn-secondary">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    showAlert('Choose your download option', 'success');
 }
 
 function showAlert(message, type) {
@@ -616,11 +455,6 @@ function updateHistoryUI() {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
     }
-}
-
-function setUsername(username) {
-    document.getElementById('username').value = username;
-    generateCollage();
 }
 
 async function shareCollage() {
@@ -1211,11 +1045,6 @@ async function getSpotifyToken() {
 }
 
 async function generateProfileCard() {
-    if (!API_KEY) {
-        showAlert('Application not properly initialized. Please refresh the page.', 'danger');
-        return;
-    }
-
     const username = document.getElementById('username').value;
     if (!username) {
         showAlert('Please enter a Last.fm username', 'danger');
@@ -1510,36 +1339,291 @@ async function initializeApp() {
         const response = await fetch('/api/config');
         const config = await response.json();
         API_KEY = config.lastfmApiKey;
-        // Enable buttons after initialization
-        enableInterface();
     } catch (error) {
         console.error('Error initializing app:', error);
         showAlert('Error initializing application', 'danger');
-        disableInterface();
     }
 }
 
-// Add these helper functions
-function disableInterface() {
-    const buttons = document.querySelectorAll('button');
-    buttons.forEach(button => {
-        button.disabled = true;
-    });
-}
-
-function enableInterface() {
-    const buttons = document.querySelectorAll('button');
-    buttons.forEach(button => {
-        button.disabled = false;
-    });
-}
-
-// Update the initialization
-document.addEventListener('DOMContentLoaded', async () => {
-    // Disable interface until initialized
-    disableInterface();
-    // Initialize app
-    await initializeApp();
-    // Initialize mobile handling
+// Call initializeApp when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
     initializeMobileHandling();
-}); 
+});
+
+// Add event listeners for the new controls
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing initialization code ...
+
+    // Gap size slider
+    const gapSize = document.getElementById('gapSize');
+    const gapSizeValue = document.getElementById('gapSizeValue');
+    gapSize.addEventListener('input', (e) => {
+        gapSizeValue.textContent = `${e.target.value}px`;
+        if (document.getElementById('collageWrapper')) {
+            document.getElementById('collageWrapper').style.gap = `${e.target.value}px`;
+        }
+    });
+
+    // Border radius slider
+    const borderRadius = document.getElementById('borderRadius');
+    const borderRadiusValue = document.getElementById('borderRadiusValue');
+    borderRadius.addEventListener('input', (e) => {
+        borderRadiusValue.textContent = `${e.target.value}px`;
+        document.documentElement.style.setProperty('--border-radius', `${e.target.value}px`);
+    });
+
+    // Background color picker
+    const bgColor = document.getElementById('bgColor');
+    bgColor.addEventListener('input', (e) => {
+        if (document.getElementById('collageWrapper')) {
+            document.getElementById('collageWrapper').style.backgroundColor = e.target.value;
+        }
+    });
+});
+
+// Update the exportToSpotify function to show the modal
+function exportToSpotify() {
+    if (!currentUsername) {
+        showAlert('Please set a Last.fm username first', 'danger');
+        return;
+    }
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('spotifyExportModal'));
+    modal.show();
+}
+
+// Update createSpotifyPlaylist function
+async function createSpotifyPlaylist() {
+    try {
+        const playlistType = document.getElementById('spotifyPlaylistType').value;
+        const limit = parseInt(document.getElementById('spotifyPlaylistLimit').value);
+        const timeRange = document.getElementById('timeRange').value;
+        const period = formatPeriod(timeRange);
+
+        // Show loading state
+        const createButton = document.querySelector('#spotifyExportModal .btn-success');
+        const originalText = createButton.innerHTML;
+        createButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Creating playlist...';
+        createButton.disabled = true;
+
+        let tracks = [];
+        let playlistName = '';
+
+        try {
+            switch (playlistType) {
+                case 'tracks':
+                    tracks = await fetchTopTracks(currentUsername, timeRange, limit);
+                    playlistName = `${currentUsername}'s Top Tracks - ${period}`;
+                    tracks = tracks.map(track => ({
+                        name: track.name,
+                        artist: track.artist.name
+                    }));
+                    break;
+
+                case 'artists':
+                    const artists = await fetchTopArtists(currentUsername, timeRange, limit);
+                    playlistName = `${currentUsername}'s Top Artists' Tracks - ${period}`;
+                    // Get top tracks for each artist
+                    for (const artist of artists) {
+                        const artistTracks = await fetchArtistTopTracks(artist.name);
+                        tracks.push(...artistTracks.slice(0, 3).map(track => ({
+                            name: track.name,
+                            artist: artist.name
+                        })));
+                    }
+                    break;
+
+                case 'albums':
+                    const albums = await fetchTopAlbums(currentUsername, timeRange, limit);
+                    playlistName = `${currentUsername}'s Top Albums' Tracks - ${period}`;
+                    // Get tracks for each album
+                    for (const album of albums) {
+                        try {
+                            const albumTracks = await fetchAlbumTracks(album.artist.name, album.name);
+                            if (albumTracks && albumTracks.length > 0) {
+                                // Take up to 5 tracks from each album
+                                tracks.push(...albumTracks.slice(0, 5));
+                            }
+                        } catch (error) {
+                            console.warn(`Error processing album ${album.name}:`, error);
+                            continue;
+                        }
+                    }
+                    break;
+            }
+
+            const response = await fetch('/api/create-spotify-playlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tracks,
+                    playlistName
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.status === 401) {
+                // Try to refresh token
+                const refreshResponse = await fetch('/api/refresh-spotify-token', {
+                    method: 'POST'
+                });
+                
+                if (refreshResponse.ok) {
+                    // Retry the playlist creation
+                    return createSpotifyPlaylist();
+                } else {
+                    window.location.href = '/auth/spotify';
+                    return;
+                }
+            }
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to create playlist');
+            }
+
+            // Hide the modal
+            bootstrap.Modal.getInstance(document.getElementById('spotifyExportModal')).hide();
+            
+            if (data.tracksAdded > 0) {
+                showAlert(`Playlist created with ${data.tracksAdded} tracks! <a href="${data.playlistUrl}" target="_blank">Open in Spotify</a>`, 'success');
+            } else {
+                showAlert('Created playlist but no matching tracks were found on Spotify', 'warning');
+            }
+        } finally {
+            // Reset button state
+            createButton.innerHTML = originalText;
+            createButton.disabled = false;
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        showAlert(`Error: ${error.message}`, 'danger');
+    }
+}
+
+// Add helper functions to fetch tracks
+async function fetchArtistTopTracks(artistName) {
+    const params = new URLSearchParams({
+        method: 'artist.getTopTracks',
+        artist: artistName,
+        api_key: API_KEY,
+        format: 'json',
+        limit: 3
+    });
+
+    const response = await fetch(`${API_BASE_URL}?${params}`);
+    const data = await response.json();
+    return data.toptracks?.track || [];
+}
+
+async function fetchAlbumTracks(artistName, albumName) {
+    const params = new URLSearchParams({
+        method: 'album.getInfo',
+        artist: artistName,
+        album: albumName,
+        api_key: API_KEY,
+        format: 'json'
+    });
+
+    try {
+        const response = await fetch(`${API_BASE_URL}?${params}`);
+        const data = await response.json();
+        
+        // Handle different possible data structures
+        if (data.album?.tracks?.track) {
+            // If it's a single track, wrap it in an array
+            const tracks = Array.isArray(data.album.tracks.track) 
+                ? data.album.tracks.track 
+                : [data.album.tracks.track];
+            
+            return tracks.map(track => ({
+                name: track.name,
+                artist: track.artist?.name || artistName // Fallback to album artist if track artist is missing
+            }));
+        }
+        return [];
+    } catch (error) {
+        console.warn(`Error fetching tracks for album ${albumName}:`, error);
+        return [];
+    }
+}
+
+async function setUsername() {
+    const username = document.getElementById('mainUsername').value.trim();
+    if (!username) {
+        showAlert('Please enter a Last.fm username', 'danger');
+        return;
+    }
+
+    try {
+        // Verify the username exists by trying to fetch user info
+        const params = new URLSearchParams({
+            method: 'user.getinfo',
+            user: username,
+            api_key: API_KEY,
+            format: 'json'
+        });
+
+        const response = await fetch(`${API_BASE_URL}?${params}`);
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.message);
+        }
+
+        // Username is valid
+        currentUsername = username;
+        
+        // Enable main content
+        const mainContent = document.getElementById('mainContent');
+        mainContent.style.opacity = '1';
+        mainContent.style.pointerEvents = 'auto';
+
+        // Update all username inputs
+        document.querySelectorAll('input[type="text"][id$="username"]').forEach(input => {
+            input.value = username;
+        });
+
+        // Load initial data
+        await Promise.all([
+            updateProfile(username),
+            updateTopCharts(username),
+            updateRecentTracks(username)
+        ]);
+
+        showAlert(`Welcome, ${username}!`, 'success');
+        
+        // Store username in localStorage for persistence
+        localStorage.setItem('lastfm_username', username);
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('Invalid username. Please check and try again.', 'danger');
+    }
+}
+
+// Add this to your DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing initialization code ...
+
+    // Check for stored username
+    const storedUsername = localStorage.getItem('lastfm_username');
+    if (storedUsername) {
+        document.getElementById('mainUsername').value = storedUsername;
+        setUsername();
+    }
+});
+
+// Add a function to change username
+function changeUsername() {
+    currentUsername = '';
+    localStorage.removeItem('lastfm_username');
+    document.getElementById('mainUsername').value = '';
+    const mainContent = document.getElementById('mainContent');
+    mainContent.style.opacity = '0.5';
+    mainContent.style.pointerEvents = 'none';
+    showAlert('Username cleared. Please enter a new username.', 'info');
+} 

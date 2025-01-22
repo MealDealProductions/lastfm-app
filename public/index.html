@@ -29,7 +29,29 @@
         </div>
     </nav>
 
-    <div class="container py-5">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card bg-black text-white shadow-lg border-0 mb-4">
+                    <div class="card-body p-4">
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-dark border-0">
+                                <i class="fa-solid fa-user text-muted"></i>
+                            </span>
+                            <input type="text" id="mainUsername" 
+                                   class="form-control form-control-lg bg-dark text-white border-0" 
+                                   placeholder="Enter Last.fm username">
+                            <button class="btn btn-primary" onclick="setUsername()">
+                                <i class="fa-solid fa-check me-2"></i>Set Username
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-3" id="mainContent" style="opacity: 0.5; pointer-events: none;">
         <div class="row justify-content-center">
             <div class="col-md-10 col-lg-8">
                 <div class="card bg-black text-white shadow-lg border-0">
@@ -88,13 +110,41 @@
                                             <option value="vinyl">Vinyl</option>
                                         </select>
                                     </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Background Color</label>
+                                        <input type="color" id="bgColor" class="form-control form-control-lg form-control-color bg-dark" 
+                                               value="#000000" title="Choose background color">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Gap Size</label>
+                                        <input type="range" id="gapSize" class="form-range" 
+                                               min="0" max="30" value="8">
+                                        <div class="form-text">Spacing between items: <span id="gapSizeValue">8px</span></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Border Radius</label>
+                                        <input type="range" id="borderRadius" class="form-range" 
+                                               min="0" max="30" value="0">
+                                        <div class="form-text">Corner roundness: <span id="borderRadiusValue">0px</span></div>
+                                    </div>
                                     <div class="col-md-12">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" id="showText" checked>
                                             <label class="form-check-label" for="showText">Show album text</label>
                                         </div>
                                     </div>
-                                    
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="showPlaycount">
+                                            <label class="form-check-label" for="showPlaycount">Show play count</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="showRank">
+                                            <label class="form-check-label" for="showRank">Show ranking</label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col-12">
                                     <button onclick="generateCollage()" class="btn btn-primary btn-lg w-100 generate-btn">
@@ -114,6 +164,9 @@
                                 </button>
                                 <button class="btn btn-outline-primary" onclick="copyLink()">
                                     <i class="fa-solid fa-link me-2"></i>Copy Link
+                                </button>
+                                <button class="btn btn-outline-success" onclick="exportToSpotify()">
+                                    <i class="fa-brands fa-spotify me-2"></i>Export to Spotify
                                 </button>
                             </div>
                         </div>
@@ -273,5 +326,45 @@
             </p>
         </div>
     </footer>
+
+    <!-- Add this modal markup at the bottom of the body tag, before the scripts -->
+    <div class="modal fade" id="spotifyExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title">Export to Spotify</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Playlist Type</label>
+                        <select id="spotifyPlaylistType" class="form-select form-select-lg bg-dark text-white border-0">
+                            <option value="tracks">Top Tracks</option>
+                            <option value="artists">Top Artists' Popular Tracks</option>
+                            <option value="albums">Top Albums' Tracks</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Number of Items</label>
+                        <select id="spotifyPlaylistLimit" class="form-select form-select-lg bg-dark text-white border-0">
+                            <option value="10">10 items</option>
+                            <option value="25">25 items</option>
+                            <option value="50" selected>50 items</option>
+                            <option value="100">100 items</option>
+                        </select>
+                    </div>
+                    <div class="form-text mb-3">
+                        Note: For artists and albums, each item will include their top tracks
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="createSpotifyPlaylist()">
+                        <i class="fa-brands fa-spotify me-2"></i>Create Playlist
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 

@@ -981,7 +981,14 @@ body {
     transform-origin: center center;
 }
 
-.vinyl-album::before {
+.vinyl-album .image-container {
+    border-radius: 50% !important;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.5s ease;
+}
+
+.vinyl-album .image-container::before {
     content: '';
     position: absolute;
     top: 50%;
@@ -996,7 +1003,7 @@ body {
     z-index: 2;
 }
 
-.vinyl-album::after {
+.vinyl-album .image-container::after {
     content: '';
     position: absolute;
     top: 0;
@@ -1016,65 +1023,21 @@ body {
     z-index: 1;
 }
 
-.vinyl-album:hover {
+.vinyl-album:hover .image-container {
     transform: rotate(30deg) scale(1.1);
 }
 
-.vinyl-album:hover::before {
+.vinyl-album:hover .image-container::before {
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
 }
 
-.vinyl-album:hover::after {
+.vinyl-album:hover .image-container::after {
     opacity: 1;
 }
 
-.vinyl-album .image-container {
-    border-radius: 50%;
-    overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-/* Classic template text */
-.classic-album .album-info-overlay {
-    background: linear-gradient(
-        to top,
-        rgba(0, 0, 0, 0.95) 0%,
-        rgba(0, 0, 0, 0.8) 50%,
-        transparent 100%
-    );
-    padding: 1.5rem 1rem 0.8rem;
-}
-
-.classic-album .album-name {
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-}
-
-/* Mosaic template text */
-.mosaic-album .album-info-overlay {
-    background: linear-gradient(
-        45deg,
-        rgba(0, 0, 0, 0.95),
-        rgba(0, 0, 0, 0.8)
-    );
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 1rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.mosaic-album:hover .album-info-overlay {
-    opacity: 1;
-}
-
-/* Vinyl template text */
 .vinyl-album .album-info-overlay {
-    border-radius: 50%;
+    border-radius: 50% !important;
     background: radial-gradient(
         circle at center,
         transparent 20%,
@@ -1102,6 +1065,26 @@ body {
 
 .vinyl-album:hover .album-info {
     transform: rotate(0deg);
+}
+
+/* Mosaic template text */
+.mosaic-album .album-info-overlay {
+    background: linear-gradient(
+        45deg,
+        rgba(0, 0, 0, 0.95),
+        rgba(0, 0, 0, 0.8)
+    );
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mosaic-album:hover .album-info-overlay {
+    opacity: 1;
 }
 
 /* Ensure responsive behavior */
@@ -1261,4 +1244,95 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
+}
+
+/* Customization controls */
+.form-control-color {
+    width: 100%;
+    height: calc(3rem + 2px);
+    padding: 0.5rem;
+    cursor: pointer;
+}
+
+.form-range {
+    height: calc(3rem + 2px);
+    padding: 1.25rem 0;
+    background-color: var(--darker-bg);
+    border-radius: 0.5rem;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: var(--primary-color);
+}
+
+.form-range::-moz-range-thumb {
+    background: var(--primary-color);
+}
+
+/* Updated album item styles */
+.album-item .image-container {
+    border-radius: var(--border-radius, 0);
+    overflow: hidden;
+}
+
+.album-item .album-info-overlay {
+    border-radius: var(--border-radius, 0);
+}
+
+.rank-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    z-index: 1;
+}
+
+.playcount-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    z-index: 1;
+}
+
+/* Add smooth transitions for the main content */
+#mainContent {
+    transition: opacity 0.3s ease;
+}
+
+/* Style for the username card */
+.username-card {
+    transition: transform 0.3s ease;
+}
+
+.username-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Add loading state styles */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 } 

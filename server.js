@@ -50,7 +50,7 @@ app.get('/api/spotify-token', async (req, res) => {
 app.get('/auth/spotify', (req, res) => {
     const scope = 'playlist-modify-public playlist-modify-private';
     const redirectUri = process.env.NODE_ENV === 'production' 
-        ? 'https://yourdomain.com/auth/spotify/callback'  // Replace with your production domain
+        ? 'https://mdpmusic.uk/auth/spotify/callback'  // Replace with your production domain
         : 'http://localhost:3000/auth/spotify/callback';
     
     const params = new URLSearchParams({
@@ -68,7 +68,7 @@ app.get('/auth/spotify', (req, res) => {
 app.get('/auth/spotify/callback', async (req, res) => {
     const { code, state } = req.query;
     const redirectUri = process.env.NODE_ENV === 'production'
-        ? 'https://yourdomain.com/auth/spotify/callback'  // Replace with your production domain
+        ? 'https://mdpmusic.uk/auth/spotify/callback'  // Replace with your production domain
         : 'http://localhost:3000/auth/spotify/callback';
 
     try {
